@@ -1,0 +1,6 @@
+# type (r[1-9];w;u),circuit,name,[comment],[QQ]
+#,BAI00,generic file for all BAI types,,
+*[PROD],scan,id,,product
+*[HW],scan,,,HW
+!load,bai.0010043963.inc,,,
+!include,hcmode.inc,,,
