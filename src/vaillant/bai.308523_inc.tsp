@@ -67,6 +67,20 @@ namespace Bai._308523_inc {
   @ext(0x7b, 0)
   model CirPump is ReadonlyRegister<onoff>;
 
+  /** d.14 Desired heating pump power */
+  @inherit(r, wi)
+  @ext(0xa1, 0)
+  model PumpPowerDesired {
+    /** PWM-Desired central heating pump power */
+    @unit("%")
+    @values(Values_PumpPowerDesired)
+    value: UCH;
+  }
+
+  /** d.15 Current heating pump power: Current central heating pump power */
+  @ext(0x73, 0)
+  model PumpPower is ReadonlyRegister<UCH>;
+
   /** d.16 room thermostat 24 V: External controls heat demand (Clamp 3'-4') */
   @ext(0xe, 0)
   model DCRoomthermostat is ReadonlyRegister<onoff>;
@@ -83,6 +97,14 @@ namespace Bai._308523_inc {
   @ext(0x47, 0x4)
   model StoragereleaseClock is ReadonlyRegister<yesno>;
 
+  /** d.29 Primary circuit flow rate */
+  @inherit(r)
+  @ext(0xfb, 0)
+  model PrimaryCircuitFlowrate {
+    @unit("l/min")
+    value: uin100;
+  }
+
   /** d.30 Gasvalve: Gasvalve activation signal */
   @ext(0xbb, 0)
   model Gasvalve is ReadonlyRegister<onoff2>;
@@ -92,7 +114,7 @@ namespace Bai._308523_inc {
   @ext(0x24, 0)
   model TargetFanSpeed {
     /** Fan speed setpoint */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -101,7 +123,7 @@ namespace Bai._308523_inc {
   @ext(0x83, 0)
   model FanSpeed {
     /** fan speed actual value */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -178,7 +200,7 @@ namespace Bai._308523_inc {
   /** Modulationsetpoint_DK */
   @inherit(r)
   @ext(0x2e, 0)
-  model ModulationTempDesired {
+  model ModulationDesired {
     /** Modulation set point */
     @unit("%")
     @divisor(10)
@@ -274,7 +296,7 @@ namespace Bai._308523_inc {
   @ext(0x9f, 0)
   model TargetFanSpeedOutput {
     /** output fan speed */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -349,7 +371,7 @@ namespace Bai._308523_inc {
   @ext(0xdf, 0)
   model FanMinSpeedOperation {
     /** Minimum Fan speed of the appliance */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -358,7 +380,7 @@ namespace Bai._308523_inc {
   @ext(0xe0, 0)
   model FanMaxSpeedOperation {
     /** Maximum Fan speed of the appliance */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -444,7 +466,7 @@ namespace Bai._308523_inc {
   @ext(0x24, 0x4)
   model FanSpeedOffsetMin {
     /** Offset for minimum fan speed */
-    @unit("1/min")
+    @unit("rpm")
     value: SIN;
   }
 
@@ -453,7 +475,7 @@ namespace Bai._308523_inc {
   @ext(0x25, 0x4)
   model FanSpeedOffsetMax {
     /** Offset for maximum fan speed */
-    @unit("1/min")
+    @unit("rpm")
     value: SIN;
   }
 
@@ -733,7 +755,6 @@ namespace Bai._308523_inc {
   @ext(0xf4, 0)
   model PrVortexFlowSensorValue {
     /** Predictive Maintenance data */
-    @unit("ADC")
     value: SIN;
   }
 
@@ -760,6 +781,15 @@ namespace Bai._308523_inc {
   /** PrEnergyCountCH3_DK: Predictive Maintenance data */
   @ext(0xfa, 0)
   model PrEnergyCountHc3 is InstallRegister<ULG>;
+
+  enum Values_PumpPowerDesired {
+    auto: 0,
+    _53: 1,
+    _60: 2,
+    _70: 3,
+    _85: 4,
+    _100: 5,
+  }
 
   enum Values_HcPumpMode {
     post_run: 0,

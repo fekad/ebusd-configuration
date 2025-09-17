@@ -26,11 +26,11 @@ namespace Vms {
 
   /** SolarPumpPower: Performance of solar pump: (7 - 100 %) */
   @ext(0x10, 0)
-  model SolPumpPower is InstallRegister<power>;
+  model SolPumpPower is InstallRegister<percent0>;
 
   /** BufferPumpPower: Performance of buffer pump: (15 - 100%) */
   @ext(0x11, 0)
-  model BufferPumpPower is InstallRegister<power>;
+  model BufferPumpPower is InstallRegister<percent0>;
 
   /** MonitorMatlab_Last5minSolarAverage */
   @ext(0x17, 0)
@@ -93,7 +93,8 @@ namespace Vms {
   @ext(0x2e, 0)
   model CurrentFlow {
     /** Flow thru buffer circuit if loading the storage */
-    @unit("ml / min")
+    @unit("l/min")
+    @divisor(1000)
     value: UIN;
   }
 
@@ -107,11 +108,11 @@ namespace Vms {
 
   /** InternalDHWSetpoint: Temperature target for DHW loading if solar module is in stand alone appliccation without external control */
   @ext(0x35, 0)
-  model InternalHwcTempDesired is ReadonlyRegister<UCH>;
+  model InternalHwcTempDesired is ReadonlyRegister<temp0>;
 
   /** InternalCHSetpoint: Temperature target for CW loading if solar module is in stand alone appliccation without external control */
   @ext(0x36, 0)
-  model InternalHcTempDesired is ReadonlyRegister<UCH>;
+  model InternalHcTempDesired is ReadonlyRegister<temp0>;
 
   /** ASIDetected */
   @ext(0x38, 0)

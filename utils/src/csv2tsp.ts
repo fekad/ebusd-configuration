@@ -1,13 +1,14 @@
 import csvParser from "csv-parser";
-import {createReadStream, createWriteStream} from "fs";
-import {mkdir, readFile, readdir, readlink, stat, symlink, writeFile} from "fs/promises";
+import {createReadStream, createWriteStream, type Stats} from "fs";
+import {mkdir, readFile, readdir, readlink, stat, symlink, unlink, writeFile} from "fs/promises";
 import {dump, load} from "js-yaml";
 import * as path from 'path';
 import {Transform, type TransformCallback} from "stream";
 import {pipeline} from "stream/promises";
 import {isDeepStrictEqual} from "util";
 
-type ReqStrs = (string | undefined | false)[];
+type ReqStr = string | undefined | false;
+type ReqStrs = ReqStr[];
 
 type OptStrs = ReqStrs | undefined;
 
@@ -15,10 +16,11 @@ type CsvLine = Record<number, string|undefined>;
 
 type Additions = {
   subdir: string, file: string, nameNoExt: string,
-  imports: ReqStrs, includes: [string, string[]][],
+  imports: Map<string, ReqStr>, includes: [string, string[]][],
   defaultsByName: Map<string, number>, renamedDefaults: Record<string, string>,
   baseModels: Map<string, KnownModel>, complexModels: Map<string, string>,
   conditions: Map<string, string[]>, conditionBlocks: Map<string, {header: string[], lines: ReqStrs}>,
+  renamedTemplates: Map<string, string>,
 };
 
 type Trans<T extends CsvLine> = (location: string, line: T|undefined, header: string|false|undefined, additions: Additions) => OptStrs;
@@ -195,7 +197,9 @@ const pascalCase = (s?: string) => s ? s.substring(0,1).toUpperCase()+s.substrin
 const normId = (id: string): string => (id || '')
   .replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue')
   .replaceAll('Ä','AE').replaceAll('Ö','OE').replaceAll('Ü','UE')
-  .replaceAll(/[^a-zA-Z0-9_]/g, '_').replace(/^([0-9])/, '_$1');
+  .replaceAll('²', '2').replaceAll('³', '3')
+  .replaceAll(/[^a-zA-Z0-9_]/g, '_').replace(/^([0-9])/, '_$1')
+  .replaceAll(/__+/g, '_').replace(/^(.+)_$/, '$1');
 const normType = (t: string): string => {
   const parts = t.split(':');
   parts[0] = normId(parts[0]);
@@ -298,7 +302,12 @@ const addI18n = (location: string, str?: string): string|undefined => {
   i18n.set(key, {...add, first, [i18nLang]: str, locations});
   return first;
 };
-const normComment = (location: string, str?: string) => str && addI18n(location, str.replace(/@/g, 'at').replaceAll('**', '^'));
+const normComment = (location: string, str?: string) => {
+  if (!str || commentI18nIgnore && commentI18nIgnore.test(str)) {
+    return str;
+  }
+  return addI18n(location, str.replace(/@/g, 'at').replaceAll('**', '^'));
+};
 const templateTrans: Trans<TemplateLine> = (location, line, header, additions): OptStrs => {
   if (header) return templateHeader;
   if (header===false) {
@@ -311,8 +320,11 @@ const templateTrans: Trans<TemplateLine> = (location, line, header, additions): 
   }
   line = objSlice(line);
   if (!line) return;
-  const {id, typ, typLen, comm, divisor, values, constValue}
-  = divisorValues(line[0], line[1], line[2], line[4]);
+  const {id, renameTo, typ, typLen, comm, divisor, values}
+  = divisorValues(line[0], line[1], line[2], line[4], undefined, true, additions.renamedTemplates);
+  if (renameTo) {
+    additions.renamedTemplates.set(id, renameTo);
+  }
   const types = line[1].split(';');
   if (types.length>1) {
     const seen = new Map<string, number>();
@@ -321,8 +333,8 @@ const templateTrans: Trans<TemplateLine> = (location, line, header, additions): 
       comm&&comm!==line[1]&&`/** ${normComment(`${location}:${id}`, comm)} */`,
       `model ${id} {`, // expected to be lowercase in templates
       ...types.map(t => {
-          const {id, typ, typLen} = divisorValues('', t, '', '');
-          const name = removeTrailNum(normFieldName(id));
+          const {id, typ, typLen} = divisorValues('', t, '', '', undefined, undefined, additions.renamedTemplates);
+          const name = removeTrailNum(normFieldName(additions.renamedTemplates.get(id) || id));
           return `  ${typLen??''}${name}${suffix(name, seen)}: ${typ},`;
         }),
        '}',
@@ -339,7 +351,12 @@ const templateTrans: Trans<TemplateLine> = (location, line, header, additions): 
   ]
 }
 const knownManufacturers = new Map<string, [number, string]>([
+  ['tem', [0x10, 'TEM']],
+  ['wolf', [0x19, 'Wolf']], // actually under kromschroeder below
+  ['encon', [0x40, 'ENCON']],
+  ['kromschroeder', [0x50, 'Kromschröder']],
   ['vaillant', [0xb5, 'Vaillant']],
+  ['weishaupt', [0xc5, 'Weishaupt']],
 ])
 const setSubdirManuf = (subdir: string): string|undefined => {
   const [id, name] = knownManufacturers.get(subdir)||[];
@@ -403,15 +420,26 @@ const splitTypeName = (t?: string): string[] => {
   return p;
 }
 const divisorValues = (name: string|undefined, typIn: string, divVal: string|undefined,
-  comm: string|undefined, singleField?: string
-): {id: string, typ?: string, typLen?: string, comm: string, divisor?: string, values?: string, constValue?: string} => {
+  comm: string|undefined, singleField?: string, renamable?: true, renamedTemplates?: Map<string, string>,
+): {id: string, renameTo?: string, typ?: string, typLen?: string, comm: string, divisor?: string, values?: string, constValue?: string} => {
   let [typ, typName] = splitTypeName(typIn);
   name = name || typName;
+  let renameTo: string|undefined = undefined;
+  if (renamable) {
+    const parts = name.split(':');
+    if (parts.length>1) {
+      name = parts[0];
+      renameTo = parts[1];
+    }
+  }
   const id = normId(name||(typ.split(':')[0]));
   comm = comm || '';
   const typLen = addLength(typ);
   // const origTyp = typ;
   typ = normType(typ);
+  if (renamedTemplates?.has(typ)) {
+    name = renamedTemplates.get(typ);
+  }
   // if (!comm && origTyp && !isBaseType(origTyp)) {
   //   comm = origTyp;
   // }
@@ -433,7 +461,7 @@ const divisorValues = (name: string|undefined, typIn: string, divVal: string|und
     const value = parseInt(divVal!, 10);
     divisor = `@${value<0?'factor':'divisor'}(${Math.abs(value)})`;
   }
-  return {id, typ, typLen, comm, divisor, values, constValue};
+  return {id, renameTo, typ, typLen, comm, divisor, values, constValue};
 };
 const isSimpleField = (line: FieldOfLine, singleField?: string): {comm?: string, typ: string}|undefined => {
   if (!line || !singleField) return;
@@ -448,7 +476,7 @@ const isSimpleField = (line: FieldOfLine, singleField?: string): {comm?: string,
   }
   return {comm: line[5], typ};
 }
-const fieldTrans = (location: string, line: FieldOfLine|undefined, seen: Map<string, number>, singleField?: string): OptStrs => {
+const fieldTrans = (location: string, line: FieldOfLine|undefined, seen: Map<string, number>, additions: Additions, singleField?: string, optional?: true): OptStrs => {
   if (!line) return;
   const {id, typ, typLen, comm, divisor, values, constValue}
   = divisorValues(line[0], line[2], line[3], line[5], singleField);
@@ -457,8 +485,8 @@ const fieldTrans = (location: string, line: FieldOfLine|undefined, seen: Map<str
     const ret: ReqStrs = [];
     let firstComm: string|undefined = comm;
     types.filter(t=>t).forEach(t => {
-      const {id, typ, typLen} = divisorValues('', t, '', '');
-      const name = removeTrailNum(normFieldName(id));
+      const {id, typ, typLen} = divisorValues('', t, '', '', undefined, undefined, additions.renamedTemplates);
+      const name = removeTrailNum(normFieldName(additions.renamedTemplates.get(id) || id));
       const suffName = `${name}${suffix(name, seen)}`;
       ret.push(...[
         (firstComm&&firstComm!==id&&firstComm!==line[2])?`/** ${normComment(`${location}:${suffName}`, firstComm)} */`:undefined,
@@ -477,7 +505,7 @@ const fieldTrans = (location: string, line: FieldOfLine|undefined, seen: Map<str
     divisor||values,
     typLen,
     constValue!==undefined ? `@constValue(${constValue})` : '',
-    `${suffName}: ${typ},`,
+    `${suffName}${optional?'?':''}: ${typ},`,
   ]
 };
 const messageHeader = [
@@ -539,7 +567,7 @@ const namespaceWithZz = (header: string, additions: Additions) => {
   //   // drop component index suffix
   //   parts.splice(parts.length-1, 1);
   // }
-  circuit = parts.map(p=>normId(p)).map(p=>(p[0]>='0'&&p[0]<='9'?'_'+p:pascalCase(p))).join('.');
+  circuit = parts.filter(p=>!!p).map(p=>normId(p)).map(p=>(p[0]>='0'&&p[0]<='9'?'_'+p:pascalCase(p))).join('.');
   return [
     zz,
     `namespace ${circuit} {`,
@@ -554,7 +582,7 @@ const addValueLists = (): ReqStrs => {
     const keys = new Map<string, number>();
     values.forEach(v => {
       const [k, n] = v.split('=');
-      let id = normId(n.replace(/²/g, '2').replace(/³/g, '3').replaceAll(/[^a-zA-Z0-9]/g, '_'));
+      let id = normId(n);
       if (id[0]>='0' && id[0]<='9') {
         id = '_'+id;
       }
@@ -599,18 +627,20 @@ const messageTrans: Trans<MessageLine> = (location, wholeLine, header, additions
       let circuit = line[1];
       const model = line[2];
       let field = line[4];
+      const zz = hex(fromHex(line[5])[0] as number) || '';
       let value = line[6]||'';
+      let noNs = '';
       if (circuit==='scan') {
         if (!model) {
           // refers to Ebus.Id.Id
           circuit = 'Id.Id';
           field = field?.toLowerCase();
         } else {
-          additions.imports.push(`import "./${circuit}.tsp";`);
+          additions.imports.set(circuit.toLowerCase(), `import "./${circuit}.tsp";`);
         }
       }
       const fname = field||(value&&normalize?'value':'');
-      additions.conditions.set(name, [[pascalCase(circuit),pascalCase(model),fname].filter(p=>p).join('.'), value]);
+      additions.conditions.set(name, [[pascalCase(circuit),pascalCase(model),fname].filter(p=>p).join('.'), value, zz, noNs]);
       return;
     }
     // conditional
@@ -618,16 +648,22 @@ const messageTrans: Trans<MessageLine> = (location, wholeLine, header, additions
     conditions.forEach(cond => {
       // SW<1,SW>1,SW=1,SW<=1,SW>=1
       let [,name, values] = cond.match(/^([^=<>]*)(.*)$/)||[,cond];
-      const [field, value] = additions.conditions.get(name)||additions.conditions.get(cond)||[];
+      const [field, value, zz, noNs] = additions.conditions.get(name)||additions.conditions.get(cond)||[];
       if (value && !values) {
         values = value;
       }
-      conds.push(`@condition(${field}${values?`, ${values.split(';').map(v=>'"'+v+'"').join(',')}`:''})`);
+      if (zz) {
+        conds.push(`@conditionExt(${field}, ${zz}${values?`, ${values.split(';').map(v=>'"'+v+'"').join(',')}`:''})`);
+      } else {
+        conds.push(`@condition(${field}${values?`, ${values.split(';').map(v=>'"'+v+'"').join(',')}`:''})`);
+      }
       let nsAdd;
       if (value) {
         nsAdd = name;
+      } else if (noNs) {
+        nsAdd = '';
       } else {
-        nsAdd = values||'';
+        nsAdd = (zz?'_'+zz.substring(2)+(values?'_':''):'')+(values||'');
         if (loadInclude && nsAdd.startsWith("='") && field.includes('.Id.')) {
           nsAdd = '_'+loadInclude.split('.').reverse()[0]; // reduce multiple product ids with filename instead
         }
@@ -643,7 +679,7 @@ const messageTrans: Trans<MessageLine> = (location, wholeLine, header, additions
     const isLoad = dirsStr==='!load';
     if (dirsStr==='!include' || isLoad) {
       const fileNoExt = path.basename(line[1]!, path.extname(line[1]!));
-      additions.imports.push(`import "./${fileNoExt}_inc.tsp";`);
+      additions.imports.set(fileNoExt.toLowerCase(), `import "./${fileNoExt}_inc.tsp";`);
       const fileComp = fileNoExt.split('.').reverse()[0];
       let name = condNamespace || fileComp;
       name = normId(name.replace(/(__[^_]+_?)+/, '_'+fileComp)); // reduce multiple product ids with filename instead
@@ -675,9 +711,33 @@ const messageTrans: Trans<MessageLine> = (location, wholeLine, header, additions
       isDefault += ` for user level "${auth}"`;
     }
   }
-  let dirs = dirsStr.split(';').map(d=>d.replace(/[0-9]$/,'')); // strip off poll prio
+  if (circuit) {
+    const name = path.basename(location, path.extname(location));
+    const parts = name.split('.');
+    if (parts.length===1 ? circuit===name : parts[0].match(/^[0-9a-f]{2,2}$/) ? circuit===parts[1] : circuit===name) {
+      circuit = undefined;
+    }
+  }
+  if (circuit && !namespacePerCircuit) {
+    console.warn(`found circuit ${circuit} that differs from the file name circuit part in ${location}${isDefault?' for default':''}. consider using the '-n' switch!`);
+  }
+  const dirs = dirsStr.split(';').map(d=>d.replace(/[0-9]$/,'')); // strip off poll prio
   const poll = dirsStr.split(';').filter(d=>d.match(/r[0-9]$/)).map(d=>d.replace(/.*([0-9])$/,'$1')).filter(p=>p).sort(); // extract poll prio
-  const single = dirs.length===1 && (isDefault || !additions.defaultsByName.has(dirs[0]));//todo why
+  let defaultNs: string|undefined;
+  if (namespacePerCircuit && !isDefault && !circuit) {
+    const add = additions.renamedDefaults[':'+dirsStr];
+    if (add) {
+      defaultNs = add;
+      // dirs.forEach((v, i) => dirs[i] = add+':'+v);
+      condNamespace = add+(condNamespace?'.'+condNamespace:'');
+    }
+  }
+  // single: outside of any defaults inherit scope
+  const single = dirs.length===1 && (
+    isDefault
+    || line[6] // no inherit from default when pbsb is set
+    || !additions.defaultsByName.has((defaultNs?defaultNs+':':'')+dirs[0])
+  );
   const chain = (line[7]||'').split(';').map((i,_,a)=>fromHexOpt(a.length<=1&&!!single&&!!line[6], line[6], i.split(':')[0]));
   const idComb = chain[0];
   if (isDefault) {
@@ -699,8 +759,14 @@ const messageTrans: Trans<MessageLine> = (location, wholeLine, header, additions
       }
       delete additions.renamedDefaults[dirs[0]];
     }
-    const suff = suffix(dirsStr, additions.defaultsByName);
+    const suff = suffix(
+      (namespacePerCircuit && !condNamespace && circuit ? circuit+':' : '')+
+      dirsStr, additions.defaultsByName);
     dirs[0] += suff;
+    if (namespacePerCircuit && !condNamespace && circuit) {
+      additions.renamedDefaults[':'+dirsStr] = circuit;
+      condNamespace = circuit;
+    }
   }
   const chainLengths = chain.length>1 && (line[7]||'').split(';').map(i=>i.split(':')[1])
     .filter(i=>i?.length)
@@ -710,7 +776,10 @@ const messageTrans: Trans<MessageLine> = (location, wholeLine, header, additions
   }
   const zz = line[5]&&fromHex(line[5]).join();
   // adjust location before extracting fields
-  location += `:${condNamespace||''}:${dirs[0]}:${zz||''}:${idComb.join(',')}`;
+  location += `:${condNamespace||''}:`;
+  location += single ? dirs[0]
+  : dirs.map(d=>additions.renamedDefaults[d] || (d+getSuffix((defaultNs?defaultNs+':':'')+d, additions.defaultsByName))).join(',');
+  location += `:${zz||''}:${idComb.join(',')}`;//inherited is missing
   const fieldLines: FieldOfLine[] = [];
   const seenFields = new Map<string, number>();
   for (let idx=messageLinePrefixLen; idx<messageLinePrefixLen+maxFields*messageLineFieldLen; idx+=messageLineFieldLen) {
@@ -744,14 +813,21 @@ const messageTrans: Trans<MessageLine> = (location, wholeLine, header, additions
   }
   if (!model) {
     const fields: OptStrs = [];
-    fieldLines.forEach(fieldLine => fields.push(...fieldTrans(location, fieldLine, seenFields, fieldLines.length===1?modelName:'')||[]));
-      model = [
+    let optional: undefined|true = undefined;
+    fieldLines.forEach(fieldLine => {
+      if (fieldLine[0]?.startsWith('?')) {
+        fieldLine[0] = fieldLine[0].substring(1);
+        optional = true;
+      }
+      fields.push(...fieldTrans(location, fieldLine, seenFields, additions, fieldLines.length===1?modelName:'', optional)||[]);
+    });
+    model = [
       (line[3]||isDefault)&&`/** ${normComment(location, line[3])||isDefault} */`,
       single
         ? direction(dirs[0]) // single model
-        : `@inherit(${dirs.map(d=>additions.renamedDefaults[d] || (d+getSuffix(d, additions.defaultsByName))).join(', ')})`, // multi model
+        : `@inherit(${dirs.map(d=>additions.renamedDefaults[d] || (d+getSuffix((defaultNs?defaultNs+':':'')+d, additions.defaultsByName))).join(', ')})`, // multi model
       auth&&`@auth("${auth}")` || (poll.length?`@poll(${poll[0]})`:undefined),
-      line[4]&&`@qq(${fromHex(line[4]).join})`,
+      line[4]&&`@qq(${fromHex(line[4]).join('')})`,
       zz&&`@zz(${zz==='0xfe'?'BROADCAST':zz})`,
       single&&idComb.length>=2
         ? `@${isDefault?'base':'id'}(${idComb.join(', ')})`
@@ -809,15 +885,19 @@ const helpTxt = [
   '  -p mapfile   the file name of a previously generated multi-language mapping to read for seeding the i18n normalization',
   '  -s i18ndir   the directory in which to store i18n file(s) per language ("<lang>.yaml")',
   '  -i regex     pattern for file names (including relative dir) to ignore',
+  '  -I regex     pattern for comment strings to ignore for i18n',
+  '  -n           add extra namespace for explicitly named circuit',
   '  csvfile      the csv file(s) to transform (unless to traverse the whole basedir)'
 ];
 let normalize = true;
+let namespacePerCircuit = false;
 type I18n = {first: string, en?: string, de?: string, locations: Set<string>}
 const i18n = new Map<string, I18n>(); // map from i18n key to src language text and locations as message/field/template key
 let i18nLang: keyof Omit<I18n, 'locations'> = 'en';
 let warnI18n = false;
 let i18nMap: Map<string, [string, Partial<I18n>]>; // map from message/field/template key to i18n key and language+text
 let i18nMapRev: Map<string, string>; // map from non-en language to en from previous mapping
+let commentI18nIgnore: RegExp|undefined;
 export const csv2tsp = async (args: string[] = []) => {
   let indir = 'latest/en';
   let outdir = 'outtsp';
@@ -868,6 +948,12 @@ export const csv2tsp = async (args: string[] = []) => {
         break;
       case '-i':
         ignorePattern = new RegExp(args[++i]);
+        break;
+      case '-I':
+        commentI18nIgnore = new RegExp(args[++i]);
+        break;
+      case '-n':
+        namespacePerCircuit = true;
         break;
       default:
         files = args.slice(i);
@@ -941,6 +1027,7 @@ export const csv2tsp = async (args: string[] = []) => {
       list.push(path.relative(indir, file));
     }
   }
+  const renamedTemplatesByDir = new Map<string, Map<string, string>>();
   for (const file of files) {
     const subdir = path.relative(indir, path.dirname(file));
     const name = path.basename(file);
@@ -955,7 +1042,13 @@ export const csv2tsp = async (args: string[] = []) => {
       console.log(`creating directory ${todir}`);
       await mkdir(todir, {recursive: true});
     }
+    // _templates is first per directory
     const isTemplates = name==='_templates.csv';
+    let renamedTemplates = renamedTemplatesByDir.get(subdir);
+    if (!renamedTemplates) {
+      renamedTemplates = new Map(subdir ? renamedTemplatesByDir.get('') : undefined);
+      renamedTemplatesByDir.set(subdir, renamedTemplates);
+    }
     const isInclude = path.extname(name)==='.inc';
     const nameNoExt = path.basename(name, path.extname(name));
     const namespace = isInclude ? nameNoExt+'_inc' : nameNoExt;
@@ -976,7 +1069,7 @@ export const csv2tsp = async (args: string[] = []) => {
     const content: ReqStrs = [];
     const additions: Additions = {
       subdir, file, nameNoExt,
-      imports: [],
+      imports: new Map(),
       includes: [],
       defaultsByName: new Map(),
       renamedDefaults: {},
@@ -984,6 +1077,7 @@ export const csv2tsp = async (args: string[] = []) => {
       complexModels: new Map(),
       conditions: new Map(),
       conditionBlocks: new Map(),
+      renamedTemplates,
     };
     const push = (inp: OptStrs, cb: TransformCallback, flush=false) => {
       if (!transform) return cb();
@@ -995,9 +1089,9 @@ export const csv2tsp = async (args: string[] = []) => {
         content.push(...inp);
       }
       if (!flush) return cb();
-      if (additions.imports.length) {
+      if (additions.imports.size) {
         const pos = content.map(l => l&&l.startsWith('import ')).lastIndexOf(true);
-        content.splice(pos+1, 0, ...additions.imports);
+        content.splice(pos+1, 0, ...additions.imports.values());
       }
       const addToNamespace = (lines: ReqStrs) => {
         if (!lines?.length) return;
@@ -1061,7 +1155,27 @@ export const csv2tsp = async (args: string[] = []) => {
       for (const link of links?.[location] || []) {
         const linkNameNoExt = path.basename(link, path.extname(link));
         const linkFile = path.join(todir, linkNameNoExt+'.tsp');
-        await symlink(path.relative(todir, newFile), linkFile);
+        const target = path.relative(todir, newFile);
+        let st: Stats|undefined;
+        let lnk: string|undefined;
+        try {
+          st = await stat(linkFile); // throws if not exists
+          lnk = await readlink(linkFile);
+        } catch (_) {
+          // handled below
+        }
+        if (lnk===target) {
+          // fine
+        } else {
+          if (st) {
+            try {
+              await unlink(linkFile);
+            } catch (_) {
+              // try creating the new link nevertheless
+            }
+          }
+          await symlink(target, linkFile);
+        }
       }
     }
   }
@@ -1080,7 +1194,24 @@ export const csv2tsp = async (args: string[] = []) => {
       return value;
     };
     console.log(`writing multi-language mapping to ${langFile}`);
-    await writeFile(langFile, dump(i18n, {replacer}), 'utf-8');
+    i18n.forEach((i, k) => {
+      // ensure same order
+      i18n.set(k, {
+        first: i.first,
+        en: i.en,
+        de: i.de,
+        locations: i.locations,
+      });
+    });
+
+    const sortKeys = (a: string, b: string) => {
+      const diff = a.toLowerCase().localeCompare(b.toLowerCase());
+      if (diff !== 0) {
+        return diff;
+      }
+      return a.localeCompare(b);
+    };
+    await writeFile(langFile, dump(i18n, {replacer, sortKeys}), 'utf-8');
     if (storeI18nDir) {
       // const langs = new Set<string>();
       // i18n.forEach(i => Object.keys(i).forEach(l => l!=='locations' && l!=='first' && langs.add(l)));
@@ -1097,7 +1228,7 @@ export const csv2tsp = async (args: string[] = []) => {
         if (!Object.keys(data).length) continue;
         const file = path.join(storeI18nDir, lang+'.yaml');
         console.log(`writing i18n file to ${file}`);
-        await writeFile(file, dump(data), 'utf-8');
+        await writeFile(file, dump(data, {sortKeys}), 'utf-8');
       }
     }
   }

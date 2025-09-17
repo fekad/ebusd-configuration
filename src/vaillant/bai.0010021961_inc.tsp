@@ -136,7 +136,7 @@ namespace Bai._0010021961_inc {
   @ext(0x24, 0)
   model TargetFanSpeed {
     /** Fan speed setpoint */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -145,7 +145,7 @@ namespace Bai._0010021961_inc {
   @ext(0x83, 0)
   model FanSpeed {
     /** Current fan speed */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -218,7 +218,7 @@ namespace Bai._0010021961_inc {
   /** Modulationsetpoint_DK */
   @inherit(r)
   @ext(0x2e, 0)
-  model ModulationTempDesired {
+  model ModulationDesired {
     /** Modulation set point */
     @unit("%")
     @divisor(10)
@@ -314,7 +314,7 @@ namespace Bai._0010021961_inc {
   @ext(0x9f, 0)
   model TargetFanSpeedOutput {
     /** Target fan speed */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -385,7 +385,7 @@ namespace Bai._0010021961_inc {
   @ext(0xdf, 0)
   model FanMinSpeedOperation {
     /** Fan minimum speed */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -394,7 +394,7 @@ namespace Bai._0010021961_inc {
   @ext(0xe0, 0)
   model FanMaxSpeedOperation {
     /** Fan maximum speed */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -444,7 +444,7 @@ namespace Bai._0010021961_inc {
   @inherit(r, wi_1)
   @ext(0xb7, 0)
   model HcPumpMode {
-    /** Pump mode for central heating */
+    /** Pump mode */
     @values(Values_HcPumpMode)
     value: UCH;
   }
@@ -489,7 +489,7 @@ namespace Bai._0010021961_inc {
   @ext(0xa7, 0)
   model FanSpeedOffsetMin {
     /** Fan minimum speed offset */
-    @unit("1/min")
+    @unit("rpm")
     value: SIN;
   }
 
@@ -498,7 +498,7 @@ namespace Bai._0010021961_inc {
   @ext(0xa8, 0)
   model FanSpeedOffsetMax {
     /** Fan maximum speed offset */
-    @unit("1/min")
+    @unit("rpm")
     value: SIN;
   }
 
@@ -652,8 +652,7 @@ namespace Bai._0010021961_inc {
   @ext(0xec, 0)
   model AntiCondensValue {
     /** Minimal power to avoid condensation */
-    @unit("kW / %")
-    value: UCH;
+    value: power;
   }
 
   /** d.88 SpecialAdj */
@@ -795,29 +794,53 @@ namespace Bai._0010021961_inc {
   @ext(0xc4, 0)
   model SHEMaxDeltaHwcFlow is ReadonlyRegister<temp>;
 
-  /** PrEnergySumDHW1: Maintenance data */
+  /** PrEnergySumDHW1 */
+  @inherit(r, wi_1)
   @ext(0xc5, 0)
-  model PrEnergySumHwc1 is ReadonlyRegister<ULG>;
+  model PrEnergySumHwc1 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
-  /** PrEnergyCountDHW1: Maintenance data */
+  /** PrEnergyCountDHW1 */
+  @inherit(r, wi_1)
   @ext(0xc6, 0)
-  model PrEnergyCountHwc1 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHwc1 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
-  /** PrEnergySumDHW2: Maintenance data */
+  /** PrEnergySumDHW2 */
+  @inherit(r, wi_1)
   @ext(0xc7, 0)
-  model PrEnergySumHwc2 is ReadonlyRegister<ULG>;
+  model PrEnergySumHwc2 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
-  /** PrEnergyCountDHW2: Maintenance data */
+  /** PrEnergyCountDHW2 */
+  @inherit(r, wi_1)
   @ext(0xc8, 0)
-  model PrEnergyCountHwc2 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHwc2 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
-  /** PrEnergySumDHW3: Maintenance data */
+  /** PrEnergySumDHW3 */
+  @inherit(r, wi_1)
   @ext(0xc9, 0)
-  model PrEnergySumHwc3 is ReadonlyRegister<ULG>;
+  model PrEnergySumHwc3 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
-  /** PrEnergyCountDHW3: Maintenance data */
+  /** PrEnergyCountDHW3 */
+  @inherit(r, wi_1)
   @ext(0xca, 0)
-  model PrEnergyCountHwc3 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHwc3 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
   /** MaxWaterFlowCH: v */
   @ext(0xd0, 0)
@@ -844,33 +867,56 @@ namespace Bai._0010021961_inc {
   @ext(0xf4, 0)
   model PrVortexFlowSensorValue {
     /** Maintenance data */
-    @unit("ADC")
     value: SIN;
   }
 
-  /** PrEnergySumCH1: Maintenance data */
+  /** PrEnergySumCH1 */
+  @inherit(r, wi_1)
   @ext(0xf5, 0)
-  model PrEnergySumHc1 is ReadonlyRegister<ULG>;
+  model PrEnergySumHc1 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
-  /** PrEnergyCountCH1: Maintenance data */
+  /** PrEnergyCountCH1 */
+  @inherit(r, wi_1)
   @ext(0xf6, 0)
-  model PrEnergyCountHc1 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHc1 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
-  /** PrEnergySumCH2: Maintenance data */
+  /** PrEnergySumCH2 */
+  @inherit(r, wi_1)
   @ext(0xf7, 0)
-  model PrEnergySumHc2 is ReadonlyRegister<ULG>;
+  model PrEnergySumHc2 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
-  /** PrEnergyCountCH2: Wartungsdaten */
+  /** PrEnergyCountCH2 */
+  @inherit(r, wi_1)
   @ext(0xf8, 0)
-  model PrEnergyCountHc2 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHc2 {
+    /** Wartungsdaten */
+    value: ULG;
+  }
 
-  /** PrEnergySumCH3: Maintenance data */
+  /** PrEnergySumCH3 */
+  @inherit(r, wi_1)
   @ext(0xf9, 0)
-  model PrEnergySumHc3 is ReadonlyRegister<ULG>;
+  model PrEnergySumHc3 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
-  /** PrEnergyCountCH3: Maintenance data */
+  /** PrEnergyCountCH3 */
+  @inherit(r, wi_1)
   @ext(0xfa, 0)
-  model PrEnergyCountHc3 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHc3 {
+    /** Maintenance data */
+    value: ULG;
+  }
 
   enum Values_PumpPowerDesired {
     auto: 0,
@@ -885,6 +931,7 @@ namespace Bai._0010021961_inc {
     post_run: 0,
     permanent: 1,
     winter: 2,
+    eco: 3,
   }
 
   enum Values_OptionalRelais {

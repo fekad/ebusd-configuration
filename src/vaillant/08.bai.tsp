@@ -16,18 +16,9 @@ import "./bai.0010011701_inc.tsp";
 import "./bai.0010015600_inc.tsp";
 import "./bai.0020066007_inc.tsp";
 import "./bai.308523_inc.tsp";
+import "./bai.0010021901_inc.tsp";
 import "./bai.0010021961_inc.tsp";
 import "./bai.0010008045_inc.tsp";
-import "./bai.0010003886_inc.tsp";
-import "./bai.0010004121_inc.tsp";
-import "./bai.0010006101_inc.tsp";
-import "./bai.0010010674_inc.tsp";
-import "./bai.0010011701_inc.tsp";
-import "./bai.0010015600_inc.tsp";
-import "./bai.0020066007_inc.tsp";
-import "./bai.308523_inc.tsp";
-import "./bai.0010008045_inc.tsp";
-import "./bai.308523_inc.tsp";
 import "./hcmode_inc.tsp";
 using Ebus;
 using Ebus.Num;
@@ -48,6 +39,7 @@ namespace Bai {
     @condition(
       Scan.Id.product,
       "='0010003958'",
+      "'0010002465'",
       "'0010003959'",
       "'0010003960'",
       "'0010003961'",
@@ -129,6 +121,7 @@ namespace Bai {
       "'0010004123'",
       "'0010004124'",
       "'0010004125'",
+      "'0010002498'",
       "'209'"
     )
     Scan_Id_product_0010004121: Bai._0010004121_inc,
@@ -253,7 +246,7 @@ namespace Bai {
       "'0010011703'",
       "'0010011704'",
       "'0010011709'",
-      "0010016402'",
+      "'0010016402'",
       "'0010016403'"
     )
     Scan_Id_product_0010011701: Bai._0010011701_inc,
@@ -335,6 +328,9 @@ namespace Bai {
     )
     Scan_Id_product_308523: Bai._308523_inc,
 
+    @condition(Scan.Id.product, "='0010021901'")
+    Scan_Id_product_0010021901: Bai._0010021901_inc,
+
     @condition(
       Scan.Id.product,
       "='0010021961'",
@@ -373,6 +369,12 @@ namespace Bai {
 
     @condition(Id.Id.hw, "=7401")
     hw_7401: Bai._308523_inc,
+
+    @condition(Id.Id.hw, "=3302")
+    hw_3302: Bai._0010021901_inc,
+
+    @condition(Id.Id.hw, "=7803")
+    hw_7803: Bai._0010021961_inc,
 
     @condition(Id.Id.hw, "=4702")
     hw_4702: Bai._0010008045_inc,

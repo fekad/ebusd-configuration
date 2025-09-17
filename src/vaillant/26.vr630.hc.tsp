@@ -21,7 +21,7 @@ namespace Vr630.Hc {
 
   /** StatOperatingHours */
   @ext(0xcd, 0)
-  model StatOperatingHours is ReadonlyRegister<UIN>;
+  model StatOperatingHours is ReadonlyRegister<hoursum2>;
 
   /** StatMonthOfInstallation */
   @ext(0xce, 0)
@@ -41,7 +41,7 @@ namespace Vr630.Hc {
 
   /** StatRestarts */
   @ext(0xd2, 0)
-  model StatRestarts is ReadonlyRegister<UIN>;
+  model StatRestarts is ReadonlyRegister<cntstarts2>;
 
   /** StatRTOSErrorCounter */
   @ext(0xd3, 0)
@@ -129,12 +129,8 @@ namespace Vr630.Hc {
   @condition(Id.Id.sw, ">=401")
   namespace Sw_ge401 {
     /** Max. Voraufheizung */
-    @inherit(r, wi)
     @ext(0x38, 0)
-    model HcMaxPreHeating {
-      @unit("min / 5")
-      value: UCH;
-    }
+    model HcMaxPreHeating is InstallRegister<minutes5>;
   }
 
   /** included parts */

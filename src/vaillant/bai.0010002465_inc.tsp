@@ -11,14 +11,9 @@ namespace Bai._0010002465_inc {
   // ,BAI00,EUROBIG/SMALL,0010002465 188
   // ##### dia level 1 #####
 
-  /** d.00 heating partload */
-  @inherit(r, wi)
+  /** d.00 heating partload: Heating part load */
   @ext(0x7, 0x4)
-  model PartloadHcKW {
-    /** Heating part load */
-    @unit("kW / %")
-    value: UCH;
-  }
+  model PartloadHcKW is InstallRegister<power>;
 
   /** d.01 central heating overruntime: water pump overrun time for heating mode */
   @ext(0xf7, 0x3)
@@ -97,7 +92,7 @@ namespace Bai._0010002465_inc {
   @ext(0x24, 0)
   model TargetFanSpeed {
     /** Fan speed setpoint */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -106,7 +101,7 @@ namespace Bai._0010002465_inc {
   @ext(0x83, 0)
   model FanSpeed {
     /** fan speed actual value */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -182,7 +177,7 @@ namespace Bai._0010002465_inc {
   /** Modulationsetpoint_DK */
   @inherit(r)
   @ext(0x2e, 0)
-  model ModulationTempDesired {
+  model ModulationDesired {
     /** Modulation set point */
     @unit("%")
     @divisor(10)
@@ -286,7 +281,7 @@ namespace Bai._0010002465_inc {
   @ext(0x9f, 0)
   model TargetFanSpeedOutput {
     /** output fan speed */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -520,14 +515,9 @@ namespace Bai._0010002465_inc {
   @ext(0x12, 0x4)
   model StorageLoadTimeMax is InstallRegister<minutes0>;
 
-  /** d.77 hot water partload */
-  @inherit(r, wi)
+  /** d.77 hot water partload: storage part load (storage charging capacity limit) */
   @ext(0x8, 0x4)
-  model PartloadHwcKW {
-    /** storage part load (storage charging capacity limit) */
-    @unit("kW / %")
-    value: UCH;
-  }
+  model PartloadHwcKW is InstallRegister<power>;
 
   /** d.78 Max value flow temp storage: storage charging temperature limit (target flow temperature in storage mode) */
   @ext(0xf, 0x4)
@@ -563,14 +553,9 @@ namespace Bai._0010002465_inc {
   @ext(0x20, 0x4)
   model HoursTillService is InstallRegister<hoursum2>;
 
-  /** d.85 AntiCondensValue */
-  @inherit(r, wi)
+  /** d.85 AntiCondensValue: increase of minimum power */
   @ext(0x77, 0x4)
-  model AntiCondensValue {
-    /** increase of minimum power */
-    @unit("kW / %")
-    value: UCH;
-  }
+  model AntiCondensValue is InstallRegister<power>;
 
   /** d.88 SpecialAdj: switching on threshold for recognition of water tapping0 = 1,5 l/min and no delay, 1 = 3,7 l/min and 2s delay */
   @ext(0x76, 0x4)
@@ -697,15 +682,15 @@ namespace Bai._0010002465_inc {
 
   /** PrEnergyCountDHW2_DK: Predictive Maintenance data */
   @ext(0xc8, 0)
-  model PrEnergyCountHwc2 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHwc2 is InstallRegister<ULG>;
 
   /** PrEnergySumDHW3_DK: Predictive Maintenance data */
   @ext(0xc9, 0)
-  model PrEnergySumHwc3 is ReadonlyRegister<ULG>;
+  model PrEnergySumHwc3 is InstallRegister<ULG>;
 
   /** PrEnergyCountDHW3_DK: Predictive Maintenance data */
   @ext(0xca, 0)
-  model PrEnergyCountHwc3 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHwc3 is InstallRegister<ULG>;
 
   /** MaxWaterFlowCH_DK: Predictive Maintenance data */
   @ext(0xd0, 0)
@@ -732,33 +717,32 @@ namespace Bai._0010002465_inc {
   @ext(0xf4, 0)
   model PrVortexFlowSensorValue {
     /** Predictive Maintenance data */
-    @unit("ADC")
     value: SIN;
   }
 
   /** PrEnergySumCH1_DK: Predictive Maintenance data */
   @ext(0xf5, 0)
-  model PrEnergySumHc1 is ReadonlyRegister<ULG>;
+  model PrEnergySumHc1 is InstallRegister<ULG>;
 
   /** PrEnergyCountCH1_DK: Predictive Maintenance data */
   @ext(0xf6, 0)
-  model PrEnergyCountHc1 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHc1 is InstallRegister<ULG>;
 
   /** PrEnergySumCH2_DK: Predictive Maintenance data */
   @ext(0xf7, 0)
-  model PrEnergySumHc2 is ReadonlyRegister<ULG>;
+  model PrEnergySumHc2 is InstallRegister<ULG>;
 
   /** PrEnergyCountCH2_DK: Predictive Maintenance data */
   @ext(0xf8, 0)
-  model PrEnergyCountHc2 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHc2 is InstallRegister<ULG>;
 
   /** PrEnergySumCH3_DK: Predictive Maintenance data */
   @ext(0xf9, 0)
-  model PrEnergySumHc3 is ReadonlyRegister<ULG>;
+  model PrEnergySumHc3 is InstallRegister<ULG>;
 
   /** PrEnergyCountCH3_DK: Predictive Maintenance data */
   @ext(0xfa, 0)
-  model PrEnergyCountHc3 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHc3 is InstallRegister<ULG>;
 
   enum Values_HcPumpMode {
     post_run: 0,

@@ -23,7 +23,7 @@ namespace Mc2.Mc._4 {
 
   /** StatOperatingHours */
   @ext(0xcd, 0)
-  model StatOperatingHours is ReadonlyRegister<UIN>;
+  model StatOperatingHours is ReadonlyRegister<hoursum2>;
 
   /** StatMonthOfInstallation */
   @ext(0xce, 0)
@@ -43,7 +43,7 @@ namespace Mc2.Mc._4 {
 
   /** StatRestarts */
   @ext(0xd2, 0)
-  model StatRestarts is ReadonlyRegister<UIN>;
+  model StatRestarts is ReadonlyRegister<cntstarts2>;
 
   /** StatRTOSErrorCounter */
   @ext(0xd3, 0)
@@ -134,7 +134,7 @@ namespace Mc2.Mc._4 {
 
   /** HcMaxPreHeating1: The heating start before a time window could shifted forwards maximal this time (related to the outside temperature) */
   @ext(0x38, 0)
-  model HcMaxPreHeating is Register<hours>;
+  model HcMaxPreHeating is Register<minutes5>;
 
   /** TeleswitchOperatingMode1: If the tele switch port is activated the mixer circuit operates in this mode */
   @ext(0x3f, 0)
@@ -195,7 +195,7 @@ namespace Mc2.Mc._4 {
 
   /** TemperaturDiffInOutdoor */
   @ext(0xc1, 0)
-  model TempDiffInOutdoor is ReadonlyRegister<D1C>;
+  model TempDiffInOutdoor is ReadonlyRegister<temp1>;
 
   /** HCManualWorkingModeTriggeringActive */
   @ext(0xc2, 0)

@@ -54,11 +54,20 @@ scalar minutes extends ULG;
 
 /** minutes */
 @unit("min")
+scalar minutes4 extends ULG;
+
+/** minutes */
+@unit("min")
 scalar minutes0 extends UCH;
 
 /** minutes */
 @unit("min")
 scalar minutes2 extends UIN;
+
+/** minutes */
+@unit("min")
+@factor(5)
+scalar minutes5 extends UCH;
 
 /** hours */
 @unit("h")
@@ -184,6 +193,7 @@ model tempsensor {
   sensor: sensor;
 }
 
+@unit("°C")
 scalar tempmirror extends UIN;
 
 model tempmirrorsensor {
@@ -423,8 +433,9 @@ model slotTimeFrame {
   htm_1: HTM;
 }
 
-/** Temperature stored in the slot. Degrees Celsius */
+/** Temperature stored in the slot. */
 @divisor(10)
+@unit("°C")
 scalar slotTemp extends UIN;
 
 /** Complete Slot for writing the time table settings. */
@@ -457,6 +468,10 @@ model rTimeSlotWithoutTemp {
   @maxLength(2) ign_1: IGN;
 }
 
+/** Status code */
+@values(Values_appliancecode)
+scalar appliancecode extends UCH;
+
 enum Values_daysel {
   selected: 0,
   Mo_Fr: 1,
@@ -468,7 +483,7 @@ enum Values_hcmode {
   auto: 0,
   off: 1,
   heat: 2,
-  water: 2,
+  water: 3,
 }
 
 enum Values_hcmode2 {
@@ -528,6 +543,7 @@ enum Values_mixer {
 enum Values_daynight {
   night: 0,
   day: 1,
+  load: 4,
   floorpaving: 7,
 }
 
@@ -692,6 +708,29 @@ enum Values_rcmode {
   off: 0,
   modulating: 1,
   thermostat: 2,
+}
+
+enum Values_appliancecode {
+  off: 0,
+  prerun: 1,
+  pump_prerun: 2,
+  ignition: 3,
+  on: 4,
+  overrun: 5,
+  fan_overrun: 6,
+  pump_overrun: 7,
+  shutdown: 8,
+  measure: 9,
+  hwc_desired: 10,
+  hwc_prerun: 11,
+  hwc_pump_prerun: 12,
+  hwc_ignition: 13,
+  hwc_on: 14,
+  hwc_overrun: 15,
+  hwc_fan_overrun: 16,
+  hwc_pump_overrun: 17,
+  hwc_shutdown: 18,
+  frost_protect: 34,
 }
 
 /** default *r for register */

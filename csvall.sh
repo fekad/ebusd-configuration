@@ -16,7 +16,11 @@ sed -i \
   -e 's#,UIN,,Steps,#,UIN,,,#i' \
   -e 's#,UIN,,Schritte,#,UIN,,,#ig' \
   -e 's#,UIN,,sec,#,seconds2,,,#ig' \
+  -e 's#,UIN,,h,hours#,hoursum2,,,#ig' \
+  -e 's#,UIN,,,hours#,hoursum2,,,#ig' \
+  -e 's#,UIN,,hours,#,hoursum2,,,#ig' \
   -e 's#,UCH,,sec,#,seconds0,,,#ig' \
+  -e 's#,UCH,,min / 5,#,minutes5,,,#ig' \
   -e 's#,mcmode,,,"0=OFF, 1=ON, 2=AUTO, 3=MANUAL"#,hwcmode2,,,#' \
   -e 's#,hwcmode2,,,"0=OFF, 1=ON, 2=AUTO, 3=MANUAL"#,hwcmode2,,,#' \
   -e 's#,ULG,,,Maintance Alarm Date#,DTM,,,Maintance Alarm Date#' \
@@ -29,12 +33,18 @@ sed -i \
   -e 's#,UCH,240=off;15=on,#,onoff2,,#' \
   -e 's#,UCH,,,"Off=0, On=1"#,onoff,,,#' \
   -e 's#,UCH,240=no;15=yes,#,yesno2,,#' \
+  -e 's#,RückmeldungB#,RueckmeldungB#' \
+  -e 's#ReglerCurrentTEMP#ReglerCurrentTemp#' \
+  -e 's#\(,CounterStartattempts[.*],\)temp0,#\1UCH,#' \
+  -e 's#ForWay#FourWay#g' \
   \{\} \; \
+&& npm run csv2tsp-extra \
 && npm run csv2tsp \
 && npm run csv2tsp-combine \
 && mv outtsp.de/i18n.yaml outtsp/i18n.yaml \
 && ( (cd outtsp.de && find . -type f) | xargs -i bash -c 'test -f  outtsp/{} || cp outtsp.de/{} outtsp/{}') \
 && cp normalized/*.tsp outtsp/ \
+&& sed -i -e 's#using Ebus.Str;#using Ebus.Str;\nusing Ebus.Contrib;#' outtsp/tem/_templates.tsp \
 && npm run maintsp \
 && npm run format \
 && npm run lint

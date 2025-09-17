@@ -378,27 +378,27 @@ namespace Bai._0010008045_inc {
 
   /** PrEnergySumDHW1_DK: Predictive Maintenance data */
   @ext(0xc5, 0)
-  model PrEnergySumHwc1 is ReadonlyRegister<ULG>;
+  model PrEnergySumHwc1 is InstallRegister<ULG>;
 
   /** PrEnergyCountDHW1_DK: Predictive Maintenance data */
   @ext(0xc6, 0)
-  model PrEnergyCountHwc1 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHwc1 is InstallRegister<ULG>;
 
   /** PrEnergySumDHW2_DK: Predictive Maintenance data */
   @ext(0xc7, 0)
-  model PrEnergySumHwc2 is ReadonlyRegister<ULG>;
+  model PrEnergySumHwc2 is InstallRegister<ULG>;
 
   /** PrEnergyCountDHW2_DK: Predictive Maintenance data */
   @ext(0xc8, 0)
-  model PrEnergyCountHwc2 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHwc2 is InstallRegister<ULG>;
 
   /** PrEnergySumDHW3_DK: Predictive Maintenance data */
   @ext(0xc9, 0)
-  model PrEnergySumHwc3 is ReadonlyRegister<ULG>;
+  model PrEnergySumHwc3 is InstallRegister<ULG>;
 
   /** PrEnergyCountDHW3_DK: Predictive Maintenance data */
   @ext(0xca, 0)
-  model PrEnergyCountHwc3 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHwc3 is InstallRegister<ULG>;
 
   /** MaxWaterFlowCH_DK: Predictive Maintenance data */
   @ext(0xd0, 0)
@@ -425,33 +425,32 @@ namespace Bai._0010008045_inc {
   @ext(0xf4, 0)
   model PrVortexFlowSensorValue {
     /** Predictive Maintenance data */
-    @unit("ADC")
     value: SIN;
   }
 
   /** PrEnergySumCH1_DK: Predictive Maintenance data */
   @ext(0xf5, 0)
-  model PrEnergySumHc1 is ReadonlyRegister<ULG>;
+  model PrEnergySumHc1 is InstallRegister<ULG>;
 
   /** PrEnergyCountCH1_DK: Predictive Maintenance data */
   @ext(0xf6, 0)
-  model PrEnergyCountHc1 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHc1 is InstallRegister<ULG>;
 
   /** PrEnergySumCH2_DK: Predictive Maintenance data */
   @ext(0xf7, 0)
-  model PrEnergySumHc2 is ReadonlyRegister<ULG>;
+  model PrEnergySumHc2 is InstallRegister<ULG>;
 
   /** PrEnergyCountCH2_DK: Predictive Maintenance data */
   @ext(0xf8, 0)
-  model PrEnergyCountHc2 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHc2 is InstallRegister<ULG>;
 
   /** PrEnergySumCH3_DK: Predictive Maintenance data */
   @ext(0xf9, 0)
-  model PrEnergySumHc3 is ReadonlyRegister<ULG>;
+  model PrEnergySumHc3 is InstallRegister<ULG>;
 
   /** PrEnergyCountCH3_DK: Predictive Maintenance data */
   @ext(0xfa, 0)
-  model PrEnergyCountHc3 is ReadonlyRegister<ULG>;
+  model PrEnergyCountHc3 is InstallRegister<ULG>;
   // ##### expert level #####
 
   /** external flowsetpoint: Flow target temperature from external regulator to terminal 7-8-9 */
@@ -485,7 +484,7 @@ namespace Bai._0010008045_inc {
   /** Modulationsetpoint_DK */
   @inherit(r)
   @ext(0x2e, 0)
-  model ModulationTempDesired {
+  model ModulationDesired {
     /** Modulation set point */
     @unit("%")
     @divisor(10)
@@ -581,7 +580,7 @@ namespace Bai._0010008045_inc {
   @ext(0x9f, 0)
   model TargetFanSpeedOutput {
     /** output fan speed */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -656,7 +655,7 @@ namespace Bai._0010008045_inc {
   @ext(0xdf, 0)
   model FanMinSpeedOperation {
     /** Minimum Fan speed of the appliance */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -665,7 +664,7 @@ namespace Bai._0010008045_inc {
   @ext(0xe0, 0)
   model FanMaxSpeedOperation {
     /** Maximum Fan speed of the appliance */
-    @unit("1/min")
+    @unit("rpm")
     value: UIN;
   }
 
@@ -705,6 +704,7 @@ namespace Bai._0010008045_inc {
     post_run: 0,
     permanent: 1,
     winter: 2,
+    eco: 3,
   }
 
   enum Values_AccessoriesOne {
