@@ -20,6 +20,7 @@ import "./bai.0010021901_inc.tsp";
 import "./bai.0010021961_inc.tsp";
 import "./bai.0010043897_inc.tsp";
 import "./bai.0010008045_inc.tsp";
+import "./bai.0010043963_inc.tsp";
 import "./errors_inc.tsp";
 import "./hcmode_inc.tsp";
 import "./b516_inc.tsp";
@@ -36,6 +37,9 @@ namespace Bai {
 
   /** included parts */
   union _includes {
+    @condition(Scan.Id.product, "='0010043963'")
+    Scan_Id_product_0010043963: Bai._0010043963_inc,
+
     @condition(Scan.Id.product, "='0010002315'", "'0010002316'", "'0010002317'")
     Scan_Id_product_0010002315: Bai._0010002315_inc,
 
@@ -385,8 +389,8 @@ namespace Bai {
     @condition(Id.Id.hw, "=4702")
     hw_4702: Bai._0010008045_inc,
 
-    @condition(Id.Id.hw, "=7603")
-    hw_7603: Bai._0010043897_inc,
+    //@condition(Id.Id.hw, "=7603")
+    //hw_7603: Bai._0010043897_inc,
 
     // final load alternative
     default: Bai._308523_inc,

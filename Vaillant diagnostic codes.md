@@ -1,3 +1,9 @@
+scan 08: ;Vaillant;BAI00;1104;7603
+
+npm install @ebusd/ebus-typespec
+npx tsp compile src --emit=@ebusd/ebus-typespec
+
+
 Vaillant diagnostic codes
 
 D.000 Maximum load in heating mode
